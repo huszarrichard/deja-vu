@@ -280,7 +280,7 @@ function autoDigest(ctx) {
         if (sid) seen.add(sid);
         return run(
           ["hook-context", "--plain"],
-          JSON.stringify({ session_id: sid, cwd: process.cwd(), source: "startup", deja_once: true }),
+          JSON.stringify({ session_id: sid, cwd: sessionCwd(agent), source: "startup", deja_once: true }),
         );
       },
     }),
@@ -291,8 +291,18 @@ function sessionId(agent) {
   return (agent && (agent.sessionId || (agent.session && agent.session.id))) || "";
 }
 
+// The workspace a session belongs to. One web or tui process serves sessions
+// from every workspace and never changes directory, so process.cwd() is only
+// where dsh was launched; the session header carries the directory the session
+// was opened in.
+function sessionCwd(agent) {
+  const header = agent && agent.session && agent.session.header;
+  return (header && header.cwd) || process.cwd();
+}
+
 function autoRecall(ctx) {
   let asked = "";
+  let askedIn = "";
   let recalled = "";
 
   guarded(() =>
@@ -304,9 +314,12 @@ function autoRecall(ctx) {
         if (!agent) return "";
         const prompt = lastHumanText(agent);
         if (!prompt) return "";
-        if (prompt !== asked) {
+        const cwd = sessionCwd(agent);
+        // The same question asked in another workspace is a different question.
+        if (prompt !== asked || cwd !== askedIn) {
           asked = prompt;
-          recalled = run(["hook-prompt", "--plain"], JSON.stringify({ prompt, cwd: process.cwd() }));
+          askedIn = cwd;
+          recalled = run(["hook-prompt", "--plain"], JSON.stringify({ prompt, cwd }));
         }
         // Silence is the common case: this speaks only when the history answers.
         return recalled;

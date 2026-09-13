@@ -70,6 +70,14 @@ harness falls back to the first prompt.
   such plugin, and removes it along with its row when someone drops back to it.
   Verified against a local model with no tools in play: dsh answered a question
   about a pool size that only the injected block carried.
+  The workspace deja is asked about is the session's, read from the session
+  header (`agent.session.header.cwd`). One `dsh web` process serves sessions
+  from every workspace and never changes directory, so `process.cwd()` is only
+  where dsh was launched and is kept as the fallback. The plugin directory also
+  holds a `package.json` declaring `"type": "module"`: Node takes a file's
+  module type from the nearest `package.json` above it, and a home directory
+  whose own `package.json` declares CommonJS otherwise makes dsh refuse both
+  plugins with "Failed to load the ES module".
 - **Resume**: none. The launcher's examples mention a tui profile taking
   `--resume <session>`, but this release ships no bundle for one — the two apps
   are `headless`, which takes a task and exits, and `web`, whose flags are all

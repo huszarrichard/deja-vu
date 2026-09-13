@@ -124,6 +124,14 @@
 <p>such plugin, and removes it along with its row when someone drops back to it.</p>
 <p>Verified against a local model with no tools in play: dsh answered a question</p>
 <p>about a pool size that only the injected block carried.</p>
+<p>The workspace deja is asked about is the session&#39;s, read from the session</p>
+<p>header (<code>agent.session.header.cwd</code>). One <code>dsh web</code> process serves sessions</p>
+<p>from every workspace and never changes directory, so <code>process.cwd()</code> is only</p>
+<p>where dsh was launched and is kept as the fallback. The plugin directory also</p>
+<p>holds a <code>package.json</code> declaring <code>&#34;type&#34;: &#34;module&#34;</code>: Node takes a file&#39;s</p>
+<p>module type from the nearest <code>package.json</code> above it, and a home directory</p>
+<p>whose own <code>package.json</code> declares CommonJS otherwise makes dsh refuse both</p>
+<p>plugins with &#34;Failed to load the ES module&#34;.</p>
 <ul>
 <li><strong>Resume</strong>: none. The launcher&#39;s examples mention a tui profile taking</li>
 </ul>

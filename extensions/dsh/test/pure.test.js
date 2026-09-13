@@ -92,6 +92,18 @@ test("the project digest opens the session once and asks deja for it", () => {
   assert.match(source, /deja_once: true/);
 });
 
+test("recall and the digest ask about the session's workspace", () => {
+  // One dsh web process serves sessions from every workspace and never changes
+  // directory, so process.cwd() is only where dsh was launched. The session
+  // header carries the directory the session was opened in.
+  assert.match(source, /agent\.session && agent\.session\.header/);
+  assert.match(source, /header && header\.cwd/);
+  assert.doesNotMatch(source, /cwd: process\.cwd\(\)/);
+  // The same question asked in a second workspace is asked again, not answered
+  // from the first workspace's cache.
+  assert.match(source, /prompt !== asked \|\| cwd !== askedIn/);
+});
+
 // dsh refuses a name one of its registries already holds — "prompt context
 // deja:recall is already registered", "command deja is already registered" —
 // and the failure is not local: the whole profile fails to load, so a second

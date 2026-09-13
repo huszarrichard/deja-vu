@@ -136,12 +136,21 @@ function ask(args, payload) {
   }
 }
 
-function recall(prompt) {
-  return ask(["hook-prompt", "--plain"], { prompt, cwd: process.cwd() });
+function recall(prompt, cwd) {
+  return ask(["hook-prompt", "--plain"], { prompt, cwd });
 }
 
 function sessionId(agent) {
   return (agent && (agent.sessionId || (agent.session && agent.session.id))) || "";
+}
+
+// The workspace a session belongs to. One web or tui process serves sessions
+// from every workspace and never changes directory, so process.cwd() is only
+// where dsh was launched; the session header carries the directory the session
+// was opened in.
+function sessionCwd(agent) {
+  const header = agent && agent.session && agent.session.header;
+  return (header && header.cwd) || process.cwd();
 }
 
 // The project digest, once at the start of the session. deja_once keys the
@@ -154,7 +163,7 @@ function projectDigest(agent, seen) {
   if (sid) seen.add(sid);
   return ask(["hook-context", "--plain"], {
     session_id: sid,
-    cwd: process.cwd(),
+    cwd: sessionCwd(agent),
     source: "startup",
     deja_once: true,
   });
@@ -194,6 +203,7 @@ function lastHumanText(agent) {
 
 function apply(ctx) {
   let asked = "";
+  let askedIn = "";
   let recalled = "";
   const digestSeen = new Set();
 
@@ -227,9 +237,12 @@ function apply(ctx) {
         if (!agent) return "";
         const prompt = lastHumanText(agent);
         if (!prompt) return "";
-        if (prompt !== asked) {
+        const cwd = sessionCwd(agent);
+        // The same question asked in another workspace is a different question.
+        if (prompt !== asked || cwd !== askedIn) {
           asked = prompt;
-          recalled = recall(prompt);
+          askedIn = cwd;
+          recalled = recall(prompt, cwd);
         }
         // Silence is the common case: this speaks only when the history answers.
         return recalled;
@@ -437,6 +450,21 @@ func installDeepSeek(exe string, uninstall, withAuto bool) (installResult, error
 	if err := os.MkdirAll(filepath.Dir(cmdPath), 0o755); err != nil {
 		return installResult{}, err
 	}
+	// The plugins are ES modules, and Node takes a file's module type from the
+	// nearest package.json above it. A home directory whose own package.json
+	// declares CommonJS made dsh refuse both plugins ("Failed to load the ES
+	// module"), so the directory states its own type before either is written.
+	// The name is what lets mentionsDeja recognise the file as deja's wiring,
+	// so an uninstall takes its snapshot too.
+	pkgPath := filepath.Join(filepath.Dir(cmdPath), "package.json")
+	oldPkg, err := readConfig(pkgPath)
+	if err != nil {
+		return installResult{}, err
+	}
+	pkgAction, err := writeIfChanged(pkgPath, oldPkg, []byte("{\n  \"name\": \"deja\",\n  \"type\": \"module\"\n}\n"))
+	if err != nil {
+		return installResult{}, err
+	}
 	oldCmd, err := readConfig(cmdPath)
 	if err != nil {
 		return installResult{}, err
@@ -444,6 +472,9 @@ func installDeepSeek(exe string, uninstall, withAuto bool) (installResult, error
 	cmdAction, err := writeIfChanged(cmdPath, oldCmd, []byte(dshCommandJS(exe)))
 	if err != nil {
 		return installResult{}, err
+	}
+	if pkgAction != "unchanged" {
+		cmdAction = pkgAction
 	}
 	if withAuto {
 		autoPath := dshAutoPath()
@@ -469,7 +500,7 @@ func installDeepSeek(exe string, uninstall, withAuto bool) (installResult, error
 	if err != nil {
 		return installResult{}, err
 	}
-	// The plugin directory rides along: the two files in it are deja's own and
+	// The plugin directory rides along: the files in it are deja's own and
 	// went unnamed on the screen whose job is saying what was touched (#3254).
 	plugins := installResult{Path: filepath.Dir(cmdPath), Action: cmdAction}
 	return wroteAll(installResult{Path: path, Action: a}, plugins), nil
