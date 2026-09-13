@@ -404,10 +404,8 @@ func Registry() []Harness {
 			// reads nothing out of them (SkipReason says so).
 			Name: "deepseek", Load: LoadDeepSeek, Files: DeepSeekSessionFiles,
 			Kinds: []FileKind{{
-				Name: "deepseek",
-				Match: func(p string) bool {
-					return hasBase(p, "session.jsonl") || hasBase(p, "session.jsonl.zstd")
-				},
+				Name:  "deepseek",
+				Match: isDeepSeekLog,
 				Parse: fullParse(ParseDeepSeekFile),
 			}},
 		},

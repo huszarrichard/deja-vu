@@ -272,9 +272,10 @@
     {
       "id": "deepseek",
       "store_paths": [
+        "${DSH_HOME:-~/.dsh}/sessions/*/session-*/session.v3.jsonl.zstd",
         "${DSH_HOME:-~/.dsh}/sessions/*/session-*/session.jsonl.zstd",
         "${DSH_HOME:-~/.dsh}/sessions/*/session-*/session.jsonl",
-        "${DEJA_DEEPSEEK_ROOT}/*/session-*/session.jsonl.zstd"
+        "${DEJA_DEEPSEEK_ROOT}/*/session-*/session.v3.jsonl.zstd"
       ],
       "format_kind": "jsonl",
       "fixture_paths": [

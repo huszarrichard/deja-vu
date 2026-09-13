@@ -39,7 +39,7 @@
 <h1>DeepSeek Harness</h1>
 <ul>
 <li><strong>ID</strong>: <code>deepseek</code></li>
-<li><strong>Store</strong>: <code>${DSH_HOME:-~/.dsh}/sessions/&lt;workspace-slug&gt;/session-&lt;uuid&gt;/session.jsonl.zstd</code> — one append-only log per session</li>
+<li><strong>Store</strong>: <code>${DSH_HOME:-~/.dsh}/sessions/&lt;workspace-slug&gt;/session-&lt;uuid&gt;/session.v3.jsonl.zstd</code>, one append-only log per session. Earlier dsh builds wrote <code>session.jsonl.zstd</code>, and a session directory can still hold a header-only file under that name beside its v3 log; both names are read, raw or zstd-framed</li>
 <li><strong>Read override</strong>: <code>DEJA_DEEPSEEK_ROOT</code> (sessions root), <code>DSH_HOME</code> (the harness&#39;s own home, also honored)</li>
 <li><strong>Format</strong>: JSONL, written as consecutive zstd frames by default; raw lines</li>
 </ul>

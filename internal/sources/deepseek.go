@@ -14,7 +14,10 @@ import (
 )
 
 // DeepSeek Harness (`dsh`) keeps one append-only log per session under
-// $DSH_HOME/sessions/<workspace-slug>/session-<uuid>/session.jsonl.zstd. The
+// $DSH_HOME/sessions/<workspace-slug>/session-<uuid>/. The log was
+// session.jsonl.zstd when this reader was written; dsh has since moved to
+// session.v3.jsonl.zstd with the same records, and a session directory can keep
+// a header-only file under the old name beside its v3 log. The
 // file is a JSONL stream written as consecutive zstd frames by default, with
 // raw lines available as a configuration; both are read here, chosen by the
 // extension the harness wrote.
@@ -58,11 +61,25 @@ func DeepSeekRoot() string {
 	return EnvPath("DEJA_DEEPSEEK_ROOT", filepath.Join(DSHHome(), "sessions"))
 }
 
+// deepSeekLogNames is every name dsh gives a session log. Discovery and the
+// incremental index both match on this one list, so a new name cannot reach
+// one of them and miss the other.
+var deepSeekLogNames = []string{
+	"session.jsonl", "session.jsonl.zstd",
+	"session.v3.jsonl", "session.v3.jsonl.zstd",
+}
+
+func isDeepSeekLog(p string) bool {
+	for _, name := range deepSeekLogNames {
+		if hasBase(p, name) {
+			return true
+		}
+	}
+	return false
+}
+
 func DeepSeekSessionFiles() []string {
-	return walkFiles(DeepSeekRoot(), func(p string) bool {
-		base := filepath.Base(p)
-		return base == "session.jsonl" || base == "session.jsonl.zstd"
-	})
+	return walkFiles(DeepSeekRoot(), isDeepSeekLog)
 }
 
 func LoadDeepSeek() []model.Session {
