@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,23 +16,12 @@ import (
 func sessionStartBlock(t *testing.T, cwd string) string {
 	t.Helper()
 	t.Setenv("CLAUDE_PROJECT_DIR", cwd)
-	old := os.Stdout
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
+	var hookErr error
+	block := captureStdout(t, func() { hookErr = runHookContext(index.DefaultDir(), true) })
+	if hookErr != nil {
+		t.Fatal(hookErr)
 	}
-	os.Stdout = w
-	err = runHookContext(index.DefaultDir(), true)
-	_ = w.Close()
-	os.Stdout = old
-	if err != nil {
-		t.Fatal(err)
-	}
-	var out bytes.Buffer
-	if _, cerr := io.Copy(&out, r); cerr != nil {
-		t.Fatal(cerr)
-	}
-	return out.String()
+	return block
 }
 
 // The standing-decisions block is folded into the cached session-start digest,

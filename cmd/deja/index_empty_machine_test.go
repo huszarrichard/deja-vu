@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,20 +14,11 @@ func TestIndexOnAMachineWithNoHistorySaysSo(t *testing.T) {
 	tmp := hermeticEnv(t)
 	dir := filepath.Join(tmp, "idx")
 
-	r, w, err := os.Pipe()
+	var err error
+	got := captureStderr(t, func() { err = cmdIndex(dir, nil) })
 	if err != nil {
 		t.Fatal(err)
 	}
-	stderr := os.Stderr
-	os.Stderr = w
-	err = cmdIndex(dir, nil)
-	os.Stderr = stderr
-	_ = w.Close()
-	out, _ := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := string(out)
 	if !strings.Contains(got, "nothing to index yet") {
 		t.Errorf("index on an empty machine said nothing about the empty store:\n%s", got)
 	}
@@ -55,20 +45,12 @@ func TestIndexWithHistoryDoesNotClaimNothingToIndex(t *testing.T) {
 	t.Setenv("DEJA_QWEN_ROOT", filepath.Join(tmp, "qwen"))
 	dir := filepath.Join(tmp, "idx")
 
-	r, w, err := os.Pipe()
+	var err error
+	out := captureStderr(t, func() { err = cmdIndex(dir, nil) })
 	if err != nil {
 		t.Fatal(err)
 	}
-	stderr := os.Stderr
-	os.Stderr = w
-	err = cmdIndex(dir, nil)
-	os.Stderr = stderr
-	_ = w.Close()
-	out, _ := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := string(out); strings.Contains(got, "nothing to index yet") {
+	if got := out; strings.Contains(got, "nothing to index yet") {
 		t.Errorf("index called a store with a session empty:\n%s", got)
 	}
 }

@@ -31,6 +31,16 @@ func TestANewTranscriptIsAppendedNotRewritten(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// The bytes already written, so the next pass can be held to not rewriting
+	// them. This is the invariant the progress line only describes: whatever the
+	// pass says it did, the records that were there have to still be there,
+	// unchanged, at the same offsets — that is what makes the cost follow the new
+	// file instead of the store.
+	recordsBefore, err := os.ReadFile(filepath.Join(dir, "records.bin"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	write(t, filepath.Join(claude, "p", "second.jsonl"),
 		claudeLine("s-second", "2026-01-02T05:00:00Z", "the billing webhook retries twice"))
 	var progress bytes.Buffer
@@ -39,6 +49,17 @@ func TestANewTranscriptIsAppendedNotRewritten(t *testing.T) {
 	}
 	if got := progress.String(); !strings.Contains(got, "updated 1 file") {
 		t.Errorf("a new transcript did not take the append path: %q", got)
+	}
+	recordsAfter, err := os.ReadFile(filepath.Join(dir, "records.bin"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recordsAfter) <= len(recordsBefore) {
+		t.Fatalf("records.bin is %d bytes after the append and was %d — the new session went somewhere else",
+			len(recordsAfter), len(recordsBefore))
+	}
+	if !bytes.Equal(recordsAfter[:len(recordsBefore)], recordsBefore) {
+		t.Error("the records already on file were rewritten, so the pass paid for the whole store")
 	}
 
 	for query, want := range map[string]string{

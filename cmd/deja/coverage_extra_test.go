@@ -825,21 +825,13 @@ func TestHookDigestPlainAndLimitBranches(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Chdir(work)
-	var out bytes.Buffer
-	old := os.Stdout
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
+	var hookErr error
+	out := captureStdout(t, func() { hookErr = runHookContext(index.DefaultDir(), true) })
+	if hookErr != nil {
+		t.Fatal(hookErr)
 	}
-	os.Stdout = w
-	if err := runHookContext(index.DefaultDir(), true); err != nil {
-		t.Fatal(err)
-	}
-	_ = w.Close()
-	os.Stdout = old
-	_, _ = io.Copy(&out, r)
-	if !strings.Contains(out.String(), "many project memory") || strings.Count(out.String(), "many project memory") > 3 {
-		t.Fatalf("plain hook out=%q", out.String())
+	if !strings.Contains(out, "many project memory") || strings.Count(out, "many project memory") > 3 {
+		t.Fatalf("plain hook out=%q", out)
 	}
 }
 

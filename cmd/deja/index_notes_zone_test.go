@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,18 +64,10 @@ func TestIndexRegroupsNotesGroupedInAnotherZone(t *testing.T) {
 	spawnWarmup = func(_, _ string) error { return nil }
 	t.Cleanup(func() { spawnWarmup = oldSpawn })
 
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	stderr := os.Stderr
-	os.Stderr = w
-	inZone(east, func() { err = cmdIndex(dir, nil) })
-	os.Stderr = stderr
-	_ = w.Close()
-	out, _ := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
+	var indexErr error
+	out := captureStderr(t, func() { inZone(east, func() { indexErr = cmdIndex(dir, nil) }) })
+	if indexErr != nil {
+		t.Fatal(indexErr)
 	}
 
 	var n int
