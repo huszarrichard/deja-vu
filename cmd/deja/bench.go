@@ -58,8 +58,11 @@ func runBench(args []string) error {
 	if len(args) > 0 && args[0] == "block" {
 		return runBenchBlock(args[1:])
 	}
+	if len(args) > 0 && args[0] == "ingest" {
+		return runBenchIngest(args[1:])
+	}
 	if len(args) < 1 || args[0] != "recall" {
-		return fmt.Errorf("bench: usage: bench recall|context|prompt|block [--json] [--seed N]")
+		return fmt.Errorf("bench: usage: bench recall|context|prompt|block|ingest [--json] [--seed N]")
 	}
 	jsonOutput, seed, err := parseBenchArgs("recall", args[1:])
 	if err != nil {

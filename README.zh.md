@@ -198,6 +198,7 @@ deja bench recall     # 排序回归下限：100 条查询，一半是俄语，�
 deja bench context    # 30 条带种子的任务链，外加五个负对照
 deja bench block      # 交出去的那段文字里还剩不剩答案
 deja bench prompt     # 逐条提示的钩子在什么时候开口，又在什么时候开错
+deja bench ingest     # 一次索引更新的代价：没有变化、追加一轮、新增一个记录文件、整文件重写
 ```
 
 上下文实验把 deja 召回与全量历史、朴素 grep 和冷启动作对比。默认种子下：
